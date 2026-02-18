@@ -1,17 +1,13 @@
-const { error } = require('../utils/response');
-
-const authorize = (roles = []) => {
-    if (typeof roles === 'string') {
-        roles = [roles];
-    }
-
+const checkRole = (roles) => {
     return (req, res, next) => {
-        if (!roles.includes(req.user.role)) {
-            return error(res, 'Access Denied. You do not have permission.', 403);
+        if (!req.user || !roles.includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            });
         }
         next();
     };
 };
 
-module.exports = authorize;
-
+module.exports = checkRole;

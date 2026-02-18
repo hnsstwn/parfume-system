@@ -2,11 +2,14 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const verifyToken = require('../middleware/auth.middleware');
+const checkRole = require('../middleware/role.middleware');
 
 // ================= GET ALL PRODUCTS =================
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM products ORDER BY id DESC');
+        const result = await db.query(
+            'SELECT * FROM products ORDER BY id DESC'
+        );
         res.json({ success: true, data: result.rows });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -22,7 +25,10 @@ router.get('/:id', verifyToken, async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
         }
 
         res.json({ success: true, data: result.rows[0] });
@@ -31,13 +37,16 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// ================= CREATE PRODUCT =================
-router.post('/', verifyToken, async (req, res) => {
+// ================= CREATE PRODUCT (ADMIN ONLY) =================
+router.post('/', verifyToken, checkRole('admin'), async (req, res) => {
     try {
         const { name, price, stock } = req.body;
 
         if (!name || !price || !stock) {
-            return res.status(400).json({ success: false, message: 'All fields required' });
+            return res.status(400).json({
+                success: false,
+                message: 'All fields required'
+            });
         }
 
         const result = await db.query(
@@ -47,14 +56,18 @@ router.post('/', verifyToken, async (req, res) => {
             [name, price, stock]
         );
 
-        res.status(201).json({ success: true, data: result.rows[0] });
+        res.status(201).json({
+            success: true,
+            data: result.rows[0]
+        });
+
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ================= UPDATE PRODUCT =================
-router.put('/:id', verifyToken, async (req, res) => {
+// ================= UPDATE PRODUCT (ADMIN ONLY) =================
+router.put('/:id', verifyToken, checkRole('admin'), async (req, res) => {
     try {
         const { name, price, stock } = req.body;
 
@@ -67,17 +80,24 @@ router.put('/:id', verifyToken, async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
         }
 
-        res.json({ success: true, data: result.rows[0] });
+        res.json({
+            success: true,
+            data: result.rows[0]
+        });
+
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// ================= DELETE PRODUCT =================
-router.delete('/:id', verifyToken, async (req, res) => {
+// ================= DELETE PRODUCT (ADMIN ONLY) =================
+router.delete('/:id', verifyToken, checkRole('admin'), async (req, res) => {
     try {
         const result = await db.query(
             'DELETE FROM products WHERE id = $1 RETURNING *',
@@ -85,10 +105,17 @@ router.delete('/:id', verifyToken, async (req, res) => {
         );
 
         if (result.rows.length === 0) {
-            return res.status(404).json({ success: false, message: 'Product not found' });
+            return res.status(404).json({
+                success: false,
+                message: 'Product not found'
+            });
         }
 
-        res.json({ success: true, message: 'Product deleted' });
+        res.json({
+            success: true,
+            message: 'Product deleted'
+        });
+
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

@@ -1,30 +1,24 @@
 // ===============================
-// LOAD ENV (WAJIB PALING ATAS)
+// LOAD ENV
 // ===============================
 require('dotenv').config();
 
+// ===============================
+// IMPORT
+// ===============================
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
+const rateLimit = require('express-rate-limit');
+const logger = require('./utils/logger');
 
-const app = express();
-
-// ===============================
-// DATABASE CONNECTION (Railway)
-// ===============================
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-});
-
-// ===============================
-// IMPORT ROUTES
-// ===============================
+// ROUTES
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/product.routes');
-const purchaseRoutes = require('./routes/purchase.routes');
-const reportRoutes = require('./routes/report.routes');
 const transactionRoutes = require('./routes/transaction.routes');
+const reportRoutes = require('./routes/reports.routes'); // ⬅️ PASTIKAN NAMA FILE INI SAMA
+
+// ===============================
+const app = express();
 
 // ===============================
 // MIDDLEWARE
@@ -33,74 +27,44 @@ app.use(cors());
 app.use(express.json());
 
 // ===============================
-// TEST ROOT
+// RATE LIMIT (ANTI SPAM)
+// ===============================
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 menit
+  max: 200,
+  message: "Too many requests, slow down."
+});
+app.use(limiter);
+
+// ===============================
+// ROOT
 // ===============================
 app.get('/', (req, res) => {
-    res.json({ message: 'API is running 🚀' });
+  res.json({
+    message: "🚀 Parfume System API Running",
+    version: "2.0 Production"
+  });
 });
 
 // ===============================
-// TEST DATABASE
-// ===============================
-app.get('/test-db', async (req, res) => {
-    try {
-        const result = await pool.query('SELECT NOW()');
-        res.json({ success: true, time: result.rows[0] });
-    } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// ===============================
-// SETUP PRODUCTS TABLE
-// ===============================
-app.get('/setup-products', async (req, res) => {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS products (
-                id SERIAL PRIMARY KEY,
-                name VARCHAR(100) NOT NULL,
-                price INTEGER NOT NULL,
-                stock INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        res.json({ message: "Products table created ✅" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ===============================
-// SETUP TRANSACTIONS TABLE
-// ===============================
-app.get('/setup-transactions', async (req, res) => {
-    try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS transactions (
-                id SERIAL PRIMARY KEY,
-                product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-                quantity INTEGER NOT NULL,
-                total_price INTEGER NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-
-        res.json({ message: "Transactions table created ✅" });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ===============================
-// USE ROUTES
+// ROUTES
 // ===============================
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/purchases', purchaseRoutes);
-app.use('/api/reports', reportRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/reports', reportRoutes);
+
+// ===============================
+// GLOBAL ERROR HANDLER
+// ===============================
+app.use((err, req, res, next) => {
+  logger.error(err.message);
+  res.status(500).json({
+    success: false,
+    message: "Internal Server Error",
+    error: err.message
+  });
+});
 
 // ===============================
 // START SERVER
@@ -108,5 +72,5 @@ app.use('/api/transactions', transactionRoutes);
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
