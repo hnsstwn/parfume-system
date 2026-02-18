@@ -1,16 +1,31 @@
-exports.success = (res, data, message = 'Success', code = 200) => {
-    res.status(code).json({
-        status: true,
-        message,
-        data
-    });
+// ===============================
+// SUCCESS RESPONSE
+// ===============================
+exports.success = (
+  res,
+  message = "Success",
+  data = null,
+  statusCode = 200
+) => {
+  return res.status(statusCode).json({
+    success: true,
+    message,
+    data
+  });
 };
 
-exports.error = (res, message = 'Internal Server Error', code = 500, error = null) => {
-    res.status(code).json({
-        status: false,
-        message,
-        error: process.env.NODE_ENV === 'development' ? error : undefined
-    });
+// ===============================
+// ERROR RESPONSE
+// ===============================
+exports.error = (
+  res,
+  message = "Internal Server Error",
+  statusCode = 500,
+  error = null
+) => {
+  return res.status(statusCode).json({
+    success: false,
+    message,
+    ...(process.env.NODE_ENV === "development" && error && { error })
+  });
 };
-
