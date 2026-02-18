@@ -3,9 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const verifyToken = require('../middleware/auth.middleware');
 
-// ===============================
-// GET ALL PRODUCTS
-// ===============================
+// ================= GET ALL PRODUCTS =================
 router.get('/', verifyToken, async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM products ORDER BY id DESC');
@@ -15,9 +13,7 @@ router.get('/', verifyToken, async (req, res) => {
     }
 });
 
-// ===============================
-// GET PRODUCT BY ID
-// ===============================
+// ================= GET PRODUCT BY ID =================
 router.get('/:id', verifyToken, async (req, res) => {
     try {
         const result = await db.query(
@@ -35,9 +31,7 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// ===============================
-// CREATE PRODUCT
-// ===============================
+// ================= CREATE PRODUCT =================
 router.post('/', verifyToken, async (req, res) => {
     try {
         const { name, price, stock } = req.body;
@@ -59,9 +53,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 });
 
-// ===============================
-// UPDATE PRODUCT
-// ===============================
+// ================= UPDATE PRODUCT =================
 router.put('/:id', verifyToken, async (req, res) => {
     try {
         const { name, price, stock } = req.body;
@@ -84,9 +76,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// ===============================
-// DELETE PRODUCT
-// ===============================
+// ================= DELETE PRODUCT =================
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const result = await db.query(
