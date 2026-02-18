@@ -9,14 +9,18 @@ const verifyToken = async (req, res, next) => {
     // ===============================
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader) {
       return error(res, "Access Denied. No token provided.", 401);
+    }
+
+    if (!authHeader.startsWith("Bearer ")) {
+      return error(res, "Invalid authorization format.", 401);
     }
 
     const token = authHeader.split(" ")[1];
 
     if (!token) {
-      return error(res, "Invalid token format.", 401);
+      return error(res, "Token missing.", 401);
     }
 
     // ===============================
@@ -24,11 +28,11 @@ const verifyToken = async (req, res, next) => {
     // ===============================
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "secretkey"
+      process.env.JWT_SECRET
     );
 
     // ===============================
-    // CHECK USER EXISTS IN DB
+    // CHECK USER STILL EXISTS
     // ===============================
     const user = await db.query(
       "SELECT id, role, name FROM users WHERE id = $1",
@@ -51,7 +55,7 @@ const verifyToken = async (req, res, next) => {
     next();
 
   } catch (err) {
-    return error(res, "Invalid or expired token.", 403);
+    return error(res, "Invalid or expired token.", 401);
   }
 };
 
