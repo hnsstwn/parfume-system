@@ -7,9 +7,6 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 
-// ===============================
-// INIT APP
-// ===============================
 const app = express();
 
 // ===============================
@@ -17,9 +14,7 @@ const app = express();
 // ===============================
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
+    ssl: { rejectUnauthorized: false }
 });
 
 // ===============================
@@ -50,22 +45,16 @@ app.get('/', (req, res) => {
 app.get('/test-db', async (req, res) => {
     try {
         const result = await pool.query('SELECT NOW()');
-        res.json({
-            success: true,
-            time: result.rows[0]
-        });
+        res.json({ success: true, time: result.rows[0] });
     } catch (err) {
-        res.status(500).json({
-            success: false,
-            error: err.message
-        });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
 // ===============================
 // SETUP PRODUCTS TABLE
 // ===============================
-app.get('/setup', async (req, res) => {
+app.get('/setup-products', async (req, res) => {
     try {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS products (
@@ -78,6 +67,27 @@ app.get('/setup', async (req, res) => {
         `);
 
         res.json({ message: "Products table created ✅" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ===============================
+// SETUP TRANSACTIONS TABLE
+// ===============================
+app.get('/setup-transactions', async (req, res) => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
+                quantity INTEGER NOT NULL,
+                total_price INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
+
+        res.json({ message: "Transactions table created ✅" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
