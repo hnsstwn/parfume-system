@@ -23,23 +23,51 @@ const reportRoutes = require('./routes/reports.routes');
 const app = express();
 
 // ===============================
+// TRUST PROXY (IMPORTANT FOR RAILWAY)
+// ===============================
+app.set('trust proxy', 1);
+
+// ===============================
 // SECURITY MIDDLEWARE
 // ===============================
-app.use(helmet()); // Secure HTTP headers
-app.use(cors());
-app.use(express.json());
+app.use(
+  helmet({
+    contentSecurityPolicy: false
+  })
+);
 
 // ===============================
-// REQUEST LOGGING (PRODUCTION READY)
+// CORS CONFIGURATION (PRODUCTION SAFE)
 // ===============================
-app.use(morgan('combined', {
-  stream: {
-    write: (message) => logger.info(message.trim())
-  }
-}));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || '*',
+    credentials: true
+  })
+);
 
 // ===============================
-// RATE LIMIT (ANTI SPAM / DDOS BASIC)
+// BODY PARSER
+// ===============================
+app.use(express.json({ limit: '10kb' }));
+
+// ===============================
+// REQUEST LOGGING
+// ===============================
+if (process.env.NODE_ENV === 'production') {
+  app.use(
+    morgan('combined', {
+      stream: {
+        write: (message) => logger.info(message.trim())
+      }
+    })
+  );
+} else {
+  app.use(morgan('dev'));
+}
+
+// ===============================
+// RATE LIMIT (ANTI DDOS BASIC)
 // ===============================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 menit
@@ -60,7 +88,7 @@ app.use(limiter);
 app.get('/', (req, res) => {
   res.json({
     message: "🚀 Parfume System API Running",
-    version: "2.0 Production Secure",
+    version: "3.1 Enterprise Hardened",
     environment: process.env.NODE_ENV || "development"
   });
 });
@@ -89,9 +117,12 @@ app.use((req, res) => {
 app.use((err, req, res, next) => {
   logger.error(err.stack);
 
-  res.status(500).json({
+  res.status(err.status || 500).json({
     success: false,
-    message: "Internal Server Error"
+    message:
+      process.env.NODE_ENV === 'development'
+        ? err.message
+        : "Internal Server Error"
   });
 });
 
