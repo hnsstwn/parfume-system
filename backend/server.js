@@ -1,50 +1,82 @@
-// LOAD ENV PALING ATAS
+// ===============================
+// LOAD ENV (WAJIB PALING ATAS)
+// ===============================
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
-const db = require('./config/db');
+const { Pool } = require('pg');
 
-const authRoutes = require('./routes/auth.routes');
-const productRoutes = require('./routes/product.routes');
-const purchaseRoutes = require('./routes/purchase.routes');
-const reportRoutes = require('./routes/report.routes');
-const transactionRoutes = require('./routes/transaction.routes');
-
+// ===============================
+// INIT APP
+// ===============================
 const app = express();
 
-// Middleware
+// ===============================
+// DATABASE CONNECTION
+// ===============================
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
+});
+
+// ===============================
+// MIDDLEWARE
+// ===============================
 app.use(cors());
 app.use(express.json());
 
-// Test route
+// ===============================
+// TEST API ROOT
+// ===============================
 app.get('/', (req, res) => {
     res.json({ message: 'API is running 🚀' });
 });
 
-// Test database
+// ===============================
+// TEST DATABASE
+// ===============================
 app.get('/test-db', async (req, res) => {
     try {
-        const result = await db.query('SELECT NOW()');
+        const result = await pool.query('SELECT NOW()');
         res.json({
             success: true,
             time: result.rows[0]
         });
-    } catch (error) {
+    } catch (err) {
         res.status(500).json({
             success: false,
-            error: error.message
+            error: err.message
         });
     }
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/purchases', purchaseRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/transactions', transactionRoutes);
+// ===============================
+// CREATE PRODUCTS TABLE (SETUP)
+// ===============================
+app.get('/create-products-table', async (req, res) => {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS products (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                price INTEGER NOT NULL,
+                stock INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        `);
 
+        res.json({ success: true, message: "Products table created ✅" });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// ===============================
+// START SERVER
+// ===============================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
