@@ -1,6 +1,6 @@
 const express = require('express');
-const cors = require('cors');
 const http = require('http');
+const cors = require('cors');
 const { Server } = require('socket.io');
 
 // Routes
@@ -19,7 +19,7 @@ const server = http.createServer(app);
 // Setup Socket.io
 const io = new Server(server, {
     cors: {
-        origin: "*", // Ganti dengan domain frontend saat production
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
@@ -28,7 +28,7 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Inject IO ke Request agar bisa diakses di controller
+// Inject IO ke Request
 app.use((req, res, next) => {
     req.io = io;
     next();
@@ -42,16 +42,16 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/purchases', purchaseRoutes);
 app.use('/api/reports', reportRoutes);
 
-// Error Handler (Harus paling bawah)
+// Error Handler (paling bawah)
 app.use(errorHandler);
 
-// Socket Connection Logic
+// Socket Connection
 io.on('connection', (socket) => {
     console.log('User connected:', socket.id);
+
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
     });
 });
 
 module.exports = server;
-

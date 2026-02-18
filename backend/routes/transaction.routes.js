@@ -1,12 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/transaction.controller');
-const verifyToken = require('../middleware/auth.middleware');
 
-router.use(verifyToken);
-
-router.post('/', controller.createTransaction);
-router.get('/', controller.getTransactions);
+router.get('/', (req, res) => {
+    res.json({ message: 'Transaction route working' });
+});
 
 module.exports = router;
-
