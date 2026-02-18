@@ -1,31 +1,58 @@
-const jwt = require('jsonwebtoken');
-const { error } = require('../utils/response');
-const db = require('../config/db');
+const jwt = require("jsonwebtoken");
+const { error } = require("../utils/response");
+const db = require("../config/db");
 
 const verifyToken = async (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  try {
+    // ===============================
+    // GET TOKEN FROM HEADER
+    // ===============================
+    const authHeader = req.headers.authorization;
 
-    if (!token) return error(res, 'Access Denied. No token provided.', 401);
-
-    try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
-        req.user = verified;
-
-        // Cek apakah user masih ada di database
-        const userExists = await db.query(
-            'SELECT id, role, name FROM users WHERE id = $1',
-            [verified.id]
-        );
-
-        if (userExists.rows.length === 0) {
-            return error(res, 'User no longer exists', 401);
-        }
-
-        next();
-    } catch (err) {
-        return error(res, 'Invalid Token', 403);
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return error(res, "Access Denied. No token provided.", 401);
     }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return error(res, "Invalid token format.", 401);
+    }
+
+    // ===============================
+    // VERIFY JWT
+    // ===============================
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || "secretkey"
+    );
+
+    // ===============================
+    // CHECK USER EXISTS IN DB
+    // ===============================
+    const user = await db.query(
+      "SELECT id, role, name FROM users WHERE id = $1",
+      [decoded.id]
+    );
+
+    if (user.rows.length === 0) {
+      return error(res, "User no longer exists.", 401);
+    }
+
+    // ===============================
+    // ATTACH USER TO REQUEST
+    // ===============================
+    req.user = {
+      id: user.rows[0].id,
+      role: user.rows[0].role,
+      name: user.rows[0].name
+    };
+
+    next();
+
+  } catch (err) {
+    return error(res, "Invalid or expired token.", 403);
+  }
 };
 
 module.exports = verifyToken;
