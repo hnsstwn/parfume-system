@@ -9,13 +9,19 @@ const verifyToken = async (req, res, next) => {
     if (!token) return error(res, 'Access Denied. No token provided.', 401);
 
     try {
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
+        const verified = jwt.verify(token, process.env.JWT_SECRET || 'secretkey');
         req.user = verified;
-        
-        // Cek apakah user masih ada di DB
-        const userExists = await db.query('SELECT id, role, name FROM users WHERE id = $1', [req.user.id]);
-        if (userExists.rows.length === 0) return error(res, 'User no longer exists', 401);
-        
+
+        // Cek apakah user masih ada di database
+        const userExists = await db.query(
+            'SELECT id, role, name FROM users WHERE id = $1',
+            [verified.id]
+        );
+
+        if (userExists.rows.length === 0) {
+            return error(res, 'User no longer exists', 401);
+        }
+
         next();
     } catch (err) {
         return error(res, 'Invalid Token', 403);
@@ -23,4 +29,3 @@ const verifyToken = async (req, res, next) => {
 };
 
 module.exports = verifyToken;
-

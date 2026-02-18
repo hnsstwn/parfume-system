@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const verifyToken = require('../middleware/auth.middleware');
 
-router.get('/', (req, res) => {
-    res.json({ message: 'Product route working' });
+router.get('/', verifyToken, (req, res) => {
+    res.json({
+        status: true,
+        message: "Product route protected 🔐",
+        user: req.user
+    });
 });
 
 module.exports = router;
