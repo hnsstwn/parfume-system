@@ -1,23 +1,28 @@
-// LOAD ENV DULU (WAJIB PALING ATAS)
+// LOAD ENV PALING ATAS
 require('dotenv').config();
 
 const express = require('express');
+const cors = require('cors');
+const db = require('./config/db');
+
+const authRoutes = require('./routes/auth.routes');
+const productRoutes = require('./routes/product.routes');
+const purchaseRoutes = require('./routes/purchase.routes');
+const reportRoutes = require('./routes/report.routes');
+const transactionRoutes = require('./routes/transaction.routes');
+
 const app = express();
 
-const db = require('./config/db');
-const authRoutes = require('./routes/auth.routes');
-
 // Middleware
+app.use(cors());
 app.use(express.json());
 
-// ================= ROUTES =================
-
-// Root test
+// Test route
 app.get('/', (req, res) => {
     res.json({ message: 'API is running 🚀' });
 });
 
-// Test database connection
+// Test database
 app.get('/test-db', async (req, res) => {
     try {
         const result = await db.query('SELECT NOW()');
@@ -33,10 +38,13 @@ app.get('/test-db', async (req, res) => {
     }
 });
 
-// Auth routes
+// Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/purchases', purchaseRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/transactions', transactionRoutes);
 
-// ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
