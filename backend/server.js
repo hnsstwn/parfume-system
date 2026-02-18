@@ -9,40 +9,59 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const morgan = require('morgan');
 const logger = require('./utils/logger');
 
 // ROUTES
 const authRoutes = require('./routes/auth.routes');
 const productRoutes = require('./routes/product.routes');
 const transactionRoutes = require('./routes/transaction.routes');
-const reportRoutes = require('./routes/reports.routes'); // ⬅️ PASTIKAN NAMA FILE INI SAMA
+const reportRoutes = require('./routes/reports.routes');
 
 // ===============================
 const app = express();
 
 // ===============================
-// MIDDLEWARE
+// SECURITY MIDDLEWARE
 // ===============================
+app.use(helmet()); // Secure HTTP headers
 app.use(cors());
 app.use(express.json());
 
 // ===============================
-// RATE LIMIT (ANTI SPAM)
+// REQUEST LOGGING (PRODUCTION READY)
+// ===============================
+app.use(morgan('combined', {
+  stream: {
+    write: (message) => logger.info(message.trim())
+  }
+}));
+
+// ===============================
+// RATE LIMIT (ANTI SPAM / DDOS BASIC)
 // ===============================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 menit
   max: 200,
-  message: "Too many requests, slow down."
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later."
+  }
 });
+
 app.use(limiter);
 
 // ===============================
-// ROOT
+// ROOT CHECK
 // ===============================
 app.get('/', (req, res) => {
   res.json({
     message: "🚀 Parfume System API Running",
-    version: "2.0 Production"
+    version: "2.0 Production Secure",
+    environment: process.env.NODE_ENV || "development"
   });
 });
 
@@ -55,14 +74,24 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/reports', reportRoutes);
 
 // ===============================
+// 404 HANDLER
+// ===============================
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+
+// ===============================
 // GLOBAL ERROR HANDLER
 // ===============================
 app.use((err, req, res, next) => {
-  logger.error(err.message);
+  logger.error(err.stack);
+
   res.status(500).json({
     success: false,
-    message: "Internal Server Error",
-    error: err.message
+    message: "Internal Server Error"
   });
 });
 
